@@ -1,0 +1,6 @@
+venv/
+.env
+linkplease.db
+__pycache__/
+apply.json
+keygen.json
