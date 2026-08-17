@@ -596,3 +596,27 @@ def get_stats():
         "queued": queued,
         "duplicates_blocked": duplicates_blocked
     }
+
+@app.get("/debug/events")
+def debug_events():
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT event_id, user_id, comment_id, comment_text, processed
+        FROM events
+        WHERE user_id IN (
+            'usr_11e668fa8a',
+            'usr_981c65311f',
+            'usr_b8d34c97c6',
+            'usr_be7548cb84',
+            'usr_da5942b495',
+            'usr_e8422333e7'
+        )
+    """)
+
+    rows = [dict(row) for row in cursor.fetchall()]
+
+    conn.close()
+
+    return rows
