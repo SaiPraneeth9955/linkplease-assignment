@@ -7,10 +7,16 @@ def get_connection():
     # This opens (or creates, if it doesn't exist yet) our database file.
     # check_same_thread=False is needed because FastAPI can handle requests
     # from multiple background tasks, not just one.
-    conn = sqlite3.connect(DB_NAME, check_same_thread=False)
+    # timeout=30 makes SQLite wait and retry automatically instead of
+    # immediately raising "database is locked" under concurrent access.
+    conn = sqlite3.connect(DB_NAME, check_same_thread=False, timeout=30)
     # This makes query results behave like dictionaries (access by column name)
     # instead of plain unlabeled tuples — much easier to read.
     conn.row_factory = sqlite3.Row
+    # WAL mode lets reads and writes happen concurrently without blocking
+    # each other — important since we have 3 things (webhook handler,
+    # process_events_loop, dm_worker_loop) all touching this database at once.
+    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 

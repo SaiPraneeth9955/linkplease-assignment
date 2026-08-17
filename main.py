@@ -173,9 +173,13 @@ def send_dm(job):
             timeout=10
         )
 
-    except requests.RequestException:
+    except requests.RequestException as error:
+
+        print(f"[send_dm] request exception: {type(error).__name__}: {error}")
 
         return "retry", None
+
+    print(f"[send_dm] status={response.status_code} body={response.text[:300]}")
 
     # Successful response. The assignment documents 202 Accepted,
     # but the mock API may also return 200 with a delivered status.
