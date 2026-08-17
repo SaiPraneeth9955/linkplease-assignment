@@ -91,12 +91,55 @@ with deleted comments.
 The PseudoGram API can return a successful HTTP response while the
 response body reports that the DM itself failed.
 
-The application therefore cannot treat HTTP 200 alone as proof that the
-recipient ultimately received the DM.
+Therefore, an HTTP 200 response alone cannot be treated as proof that
+the recipient ultimately received the DM.
 
-The implementation records the API-reported result and retries where
-appropriate, but full post-acceptance delivery reconciliation is limited
-by the current implementation.
+The implementation records the API-reported result and performs delivery
+status reconciliation where a DM ID is available, but full post-acceptance
+delivery guarantees depend on the PseudoGram delivery-status endpoint.
 
 Fix: reconcile accepted DM IDs using `GET /v1/dm/{dm_id}` until a terminal
 `delivered` or `failed` status is reached.
+
+## 8. One 500-event simulator run showed a recipient reconciliation difference
+
+During a 500-event simulator run, the PseudoGram truth endpoint reported:
+
+- 500 events generated
+- 531 webhook deliveries attempted
+- 531 webhook requests returned HTTP 200
+- 99 expected unique recipients
+
+The application created 94 unique DM jobs for that run.
+
+All 94 application jobs corresponded to users in the simulator's expected
+recipient set, and no extra recipients were created.
+
+The five users present in the simulator's expected unique-recipient list
+but absent from the application's DM queue were:
+
+- `usr_1505cd24f4`
+- `usr_5a75ce5f91`
+- `usr_82445fd15`
+- `usr_baf89253f9`
+- `usr_e93e3725be`
+
+The available truth response exposes the expected unique-recipient set
+but does not expose the individual comments or the rule-match decision
+for each recipient. Therefore, this test result alone does not establish
+that these five users should have received a DM for the configured
+`PRICE` rule.
+
+For the 94 jobs that were created, the run completed with:
+
+- 79 DMs sent successfully
+- 15 jobs failed after retry handling
+- 0 jobs remaining queued
+- 61 duplicate DM attempts blocked
+
+This discrepancy should be investigated further if recipient-level
+reconciliation against simulator truth is required.
+
+Fix: add event-level reconciliation and diagnostic tooling that records
+which incoming comments matched each rule and allows those decisions to
+be compared directly with the simulator's truth data.
